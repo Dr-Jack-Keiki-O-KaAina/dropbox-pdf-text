@@ -1,12 +1,12 @@
 {
   "name": "dropbox-pdf-text",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node index.js" },
   "dependencies": {
     "express": "^4.19.2",
-    "pdf-parse": "^1.1.1"
-  },
-  "scripts": {
-    "start": "node index.js"
+    "pdf-parse": "^1.1.1",
+    "node-fetch": "^3.3.2"
   }
 }
