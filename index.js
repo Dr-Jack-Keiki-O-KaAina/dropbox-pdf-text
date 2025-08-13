@@ -1,13 +1,14 @@
 import express from "express";
+import fetch from "node-fetch";            // important on some Render stacks
 import pdfParse from "pdf-parse";
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));
 
-const API_KEY = process.env.API_KEY;             // set on Render
-const DROPBOX_TOKEN = process.env.DROPBOX_TOKEN; // set on Render
+const API_KEY = process.env.API_KEY;
+const DROPBOX_TOKEN = process.env.DROPBOX_TOKEN;
 
-// health/ping
+// Health check route (Render hits "/")
 app.get("/", (_req, res) => {
   res.json({ ok: true, service: "Dropbox PDF Text Extractor", endpoints: ["/dropbox/pdf-text"] });
 });
@@ -34,13 +35,14 @@ app.post("/dropbox/pdf-text", async (req, res) => {
     }
 
     const buffer = Buffer.from(await dl.arrayBuffer());
-    const parsed = await pdfParse(buffer); // { text, numpages, ... }
+    const parsed = await pdfParse(buffer);
 
     res.json({ path, numPages: parsed.numpages, text: parsed.text });
   } catch (e) {
+    console.error(e);
     res.status(500).json({ error: "Server error", details: String(e) });
   }
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;    // MUST bind Render’s PORT
 app.listen(port, () => console.log("PDF text server on :" + port));
