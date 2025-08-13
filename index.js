@@ -1,6 +1,8 @@
 import express from "express";
-import fetch from "node-fetch";            // important on some Render stacks
-import pdfParse from "pdf-parse";
+import fetch from "node-fetch";
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+const pdfParse = require("pdf-parse");   // <— use CJS require for pdf-parse
 
 const app = express();
 app.use(express.json({ limit: "50mb" }));
