@@ -69,15 +69,44 @@ app.post("/dropbox/pdf-text", async (req, res) => {
       return res.status(dl.status).json({ error: "Dropbox download failed", details });
     }
 
-    const buffer = Buffer.from(await dl.arrayBuffer());
-    const parsed = await pdfParse(buffer);
+const buffer = Buffer.from(await dl.arrayBuffer());
+const parsed = await pdfParse(buffer);
 
-    // Check for blank or whitespace-only PDFs
-    if (!parsed.text || !parsed.text.trim()) {
-      return res.status(400).json({ error: "PDF appears to be empty" });
-    }
+// Full text and "blank PDF" check
+const fullText = parsed.text || "";
+if (!fullText.trim()) {
+  return res.status(400).json({ error: "PDF appears to be empty" });
+}
 
-    res.json({ path, numPages: parsed.numpages, text: parsed.text });
+// Optional chunking controls
+const { maxChars, charOffset } = req.body || {};
+const start = Number.isInteger(charOffset)
+  ? Math.max(0, charOffset)
+  : (charOffset ? Math.max(0, parseInt(charOffset, 10) || 0) : 0);
+
+const limit = Number.isInteger(maxChars)
+  ? maxChars
+  : (maxChars ? parseInt(maxChars, 10) || null : null);
+
+// Slice the requested chunk
+let out = fullText.slice(start, limit ? start + limit : undefined);
+
+// If the requested chunk is empty (e.g., offset too large), return a clear error
+if (!out.trim()) {
+  return res.status(400).json({ error: "No text at this offset (try a smaller charOffset)" });
+}
+
+const nextCharOffset = start + out.length < fullText.length ? start + out.length : null;
+const hasMore = nextCharOffset !== null;
+
+return res.json({
+  path,
+  numPages: parsed.numpages,
+  text: out,
+  chars: out.length,
+  hasMore,
+  nextCharOffset
+});
 
   } catch (e) {
     console.error(e);
