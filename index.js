@@ -85,5 +85,34 @@ app.post("/dropbox/pdf-text", async (req, res) => {
   }
 });
 
+// List a Dropbox folder (uses auto-refresh token)
+app.post("/dropbox/list-folder", async (req, res) => {
+  try {
+    if (!API_KEY || req.header("X-Api-Key") !== API_KEY) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    const { path = "", recursive = false, include_non_downloadable_files = true } = req.body || {};
+
+    const accessToken = await getDropboxAccessToken();
+
+    const resp = await fetch("https://api.dropboxapi.com/2/files/list_folder", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ path, recursive, include_non_downloadable_files })
+    });
+
+    if (!resp.ok) {
+      return res.status(resp.status).json({ error: "Dropbox list failed", details: await resp.text() });
+    }
+    res.json(await resp.json());
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: "Server error", details: String(e) });
+  }
+});
+
 const port = process.env.PORT || 3000; // Bind to Render's PORT
 app.listen(port, () => console.log("PDF text server on :" + port));
